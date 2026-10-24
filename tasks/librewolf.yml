@@ -1,0 +1,22 @@
+---
+# Enable Firefox Accounts before Librewolf's first launch, so the first sign-in needs no restart.
+# The docs list both locations; the one Librewolf reads depends on version and packaging, so write both.
+- name: Create Librewolf override directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ target_home }}/.librewolf"
+    - "{{ target_home }}/.config/librewolf/librewolf"
+
+- name: Enable Firefox Accounts
+  ansible.builtin.lineinfile:
+    path: "{{ item }}/librewolf.overrides.cfg"
+    line: defaultPref("identity.fxaccounts.enabled", true);
+    regexp: ^defaultPref\("identity\.fxaccounts\.enabled"
+    create: true
+    mode: "0644"
+  loop:
+    - "{{ target_home }}/.librewolf"
+    - "{{ target_home }}/.config/librewolf/librewolf"

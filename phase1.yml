@@ -60,6 +60,10 @@
           become: true
       when: flatpak_apps | length > 0
 
+    - name: Librewolf settings
+      ansible.builtin.include_tasks: tasks/librewolf.yml
+      when: "'librewolf' in installed_apps"
+
     - name: 1Password and Librewolf integration
       ansible.builtin.include_tasks: tasks/onepassword_librewolf.yml
       when: "'1password' in installed_apps and 'librewolf' in installed_apps"
