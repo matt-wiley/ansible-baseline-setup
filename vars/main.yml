@@ -7,3 +7,9 @@ deb_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 
 # Service name for sshd differs by family.
 ssh_service: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
+
+# Firefox-family extension IDs allowed to talk to 1Password's BrowserSupport binary. This is the
+# stable 1Password extension; the ID comes from community-published manifests, so confirm it
+# against a manifest from a working install before relying on it.
+onepassword_firefox_extension_ids:
+  - "{0a75d802-9aed-41e7-8daa-24c067386e82}"

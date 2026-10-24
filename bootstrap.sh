@@ -99,8 +99,8 @@ main() {
     log "Detected OS family: $family"
     install_prereqs "$family"
     ensure_classic_sudo "$family"
-    # sync_repo
-    # run_phase1
+    sync_repo
+    run_phase1
     log "Phase 1 complete. Next: the manual gate (1Password, Firefox Sync), then Phase 2."
 }
 
