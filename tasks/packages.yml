@@ -1,0 +1,20 @@
+---
+- name: Refresh apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == 'Debian'
+
+- name: Install native packages
+  ansible.builtin.package:
+    name: "{{ native_pkgs + (['flatpak'] if flatpak_apps | length > 0 else []) }}"
+    state: present
+
+- name: Install AUR packages
+  kewlfft.aur.aur:
+    name: "{{ aur_pkgs }}"
+    use: paru
+    state: present
+  become: true
+  become_user: aur_builder
+  when: ansible_os_family == 'Archlinux' and aur_pkgs | length > 0

@@ -1,0 +1,23 @@
+---
+- name: Import the 1Password signing key
+  ansible.builtin.rpm_key:
+    key: https://downloads.1password.com/linux/keys/1password.asc
+    state: present
+  when: "'1password' in needed_repos"
+
+- name: Add 1Password dnf repository
+  ansible.builtin.yum_repository:
+    name: 1password
+    description: 1Password Stable Channel
+    baseurl: https://downloads.1password.com/linux/rpm/stable/$basearch
+    gpgcheck: true
+    repo_gpgcheck: true
+    gpgkey: https://downloads.1password.com/linux/keys/1password.asc
+  when: "'1password' in needed_repos"
+
+- name: Add Librewolf dnf repository
+  ansible.builtin.get_url:
+    url: https://repo.librewolf.net/librewolf.repo
+    dest: /etc/yum.repos.d/librewolf.repo
+    mode: "0644"
+  when: "'librewolf' in needed_repos"

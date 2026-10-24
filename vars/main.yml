@@ -1,0 +1,9 @@
+---
+# GitHub account whose public keys (https://github.com/<user>.keys) may log in over SSH (ADR 0006).
+github_user: matt-wiley
+
+# Debian-family architecture name used in vendor repo URLs.
+deb_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+# Service name for sshd differs by family.
+ssh_service: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"

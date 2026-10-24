@@ -1,0 +1,5 @@
+# Managed by Ansible (phase1.yml); edit mise_tools in vars/apps.yml.
+[tools]
+{% for tool, version in mise_tools.items() %}
+{{ tool }} = "{{ version }}"
+{% endfor %}

@@ -1,0 +1,18 @@
+---
+# App matrix (ADR 0002). Each value is resolved: distribution -> OS family -> default.
+# `skip` leaves the app out; `{ aur: <pkg> }` installs from the AUR; `repo: <name>` adds a vendor repo first.
+# See docs/apps.md for how to add an app.
+native_apps:
+  zsh: { default: zsh }
+  git: { default: git }
+  curl: { default: curl }
+  zoxide: { default: zoxide }
+  openssh-server: { default: openssh-server, Archlinux: openssh }
+  1password: { default: 1password, repo: 1password, Archlinux: { aur: 1password } }
+  librewolf: { default: librewolf, repo: librewolf, Archlinux: { aur: librewolf-bin } }
+
+# Flathub IDs. Opt-in only; never IDEs, terminals, dev tools or browsers (ADR 0002).
+flatpak_apps: []
+
+# Global mise tools (ADR 0003), e.g. { node: lts, python: "3.13" }.
+mise_tools: {}

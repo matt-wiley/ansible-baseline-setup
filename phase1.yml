@@ -1,0 +1,72 @@
+---
+# Phase 1: everything that works with no credentials (ADR 0004).
+#   ansible-playbook -i localhost, -c local phase1.yml -K
+# Runs as the normal user; tasks that need root escalate individually.
+- name: Phase 1
+  hosts: all
+  gather_facts: true
+  vars_files:
+    - vars/main.yml
+    - vars/apps.yml
+  vars:
+    target_user: "{{ ansible_user_id }}"
+    target_home: "{{ ansible_env.HOME }}"
+
+  pre_tasks:
+    - name: Check the target is supported and not root
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family in ['Debian', 'RedHat', 'Archlinux']
+          - target_user != 'root'
+        fail_msg: "Unsupported OS family, or running as root; run as your normal user with -K."
+
+    - name: Resolve the app matrix
+      ansible.builtin.include_tasks: tasks/resolve_apps.yml
+
+  tasks:
+    - name: Vendor repositories
+      ansible.builtin.include_tasks:
+        file: "repos/{{ ansible_os_family | lower }}.yml"
+        apply:
+          become: true
+
+    - name: Packages
+      ansible.builtin.include_tasks:
+        file: tasks/packages.yml
+        apply:
+          become: true
+
+    - name: Login shell
+      ansible.builtin.include_tasks:
+        file: tasks/shell.yml
+        apply:
+          become: true
+      when: "'zsh' in installed_apps"
+
+    - name: mise
+      ansible.builtin.include_tasks: tasks/mise.yml
+
+    - name: Inbound SSH
+      ansible.builtin.include_tasks:
+        file: tasks/sshd.yml
+        apply:
+          become: true
+      when: "'openssh-server' in installed_apps"
+
+    - name: Flatpak
+      ansible.builtin.include_tasks:
+        file: tasks/flatpak.yml
+        apply:
+          become: true
+      when: flatpak_apps | length > 0
+
+    - name: 1Password and Librewolf integration
+      ansible.builtin.include_tasks: tasks/onepassword_librewolf.yml
+      when: "'1password' in installed_apps and 'librewolf' in installed_apps"
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: "{{ ssh_service }}"
+        state: restarted
+      become: true

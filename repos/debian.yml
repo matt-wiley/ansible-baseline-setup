@@ -1,0 +1,37 @@
+---
+# Vendor repos for the Debian family. Apt signatures are verified by apt; no debsig policy is installed.
+- name: Install python3-debian (needed by deb822_repository)
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    cache_valid_time: 3600
+
+- name: Add 1Password apt repository
+  ansible.builtin.deb822_repository:
+    name: 1password
+    types: [deb]
+    uris: "https://downloads.1password.com/linux/debian/{{ deb_arch }}"
+    suites: [stable]
+    components: [main]
+    architectures: ["{{ deb_arch }}"]
+    signed_by: https://downloads.1password.com/linux/keys/1password.asc
+  register: repo_1password
+  when: "'1password' in needed_repos"
+
+- name: Install extrepo (Librewolf's recommended repo method)
+  ansible.builtin.apt:
+    name: extrepo
+    state: present
+  when: "'librewolf' in needed_repos"
+
+- name: Enable the Librewolf repository
+  ansible.builtin.command:
+    cmd: extrepo enable librewolf
+    creates: /etc/apt/sources.list.d/extrepo_librewolf.sources
+  register: repo_librewolf
+  when: "'librewolf' in needed_repos"
+
+- name: Refresh apt cache after repository changes
+  ansible.builtin.apt:
+    update_cache: true
+  when: repo_1password is changed or repo_librewolf is changed

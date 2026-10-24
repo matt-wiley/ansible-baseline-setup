@@ -1,0 +1,35 @@
+---
+# Runs as the target user (no become); everything lives under $HOME.
+- name: Install mise
+  ansible.builtin.shell:
+    cmd: set -o pipefail && curl -fsSL https://mise.run | sh
+    executable: /bin/bash
+    creates: "{{ target_home }}/.local/bin/mise"
+
+- name: Put mise shims on PATH for GUI-launched apps
+  ansible.builtin.blockinfile:
+    path: "{{ target_home }}/.profile"
+    create: true
+    mode: "0644"
+    marker: "# {mark} ANSIBLE MANAGED: mise"
+    block: |
+      export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+- name: Write the global mise config
+  ansible.builtin.template:
+    src: mise-config.toml.j2
+    dest: "{{ target_home }}/.config/mise/config.toml"
+    mode: "0644"
+  when: mise_tools | length > 0
+
+- name: List missing mise tools
+  ansible.builtin.command:
+    cmd: "{{ target_home }}/.local/bin/mise ls --missing --no-header"
+  register: mise_missing
+  changed_when: false
+  when: mise_tools | length > 0
+
+- name: Install mise tools
+  ansible.builtin.command:
+    cmd: "{{ target_home }}/.local/bin/mise install --yes"
+  when: mise_tools | length > 0 and mise_missing.stdout | trim | length > 0

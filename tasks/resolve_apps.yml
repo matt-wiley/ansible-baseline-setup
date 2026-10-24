@@ -1,0 +1,25 @@
+---
+# Resolve the app matrix for this machine: distribution -> OS family -> default.
+- name: Resolve each app to a package
+  ansible.builtin.set_fact:
+    resolved_apps: >-
+      {{ resolved_apps | default([]) + [{
+        'name': item.key,
+        'pkg': pkg,
+        'repo': item.value.repo | default('')
+      }] }}
+  vars:
+    pkg: >-
+      {{ item.value[ansible_distribution]
+         | default(item.value[ansible_os_family]
+         | default(item.value['default'])) }}
+  loop: "{{ native_apps | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Split resolved apps into native, AUR and repo lists
+  ansible.builtin.set_fact:
+    native_pkgs: "{{ resolved_apps | rejectattr('pkg', 'mapping') | rejectattr('pkg', 'eq', 'skip') | map(attribute='pkg') | list }}"
+    aur_pkgs: "{{ resolved_apps | selectattr('pkg', 'mapping') | map(attribute='pkg') | map(attribute='aur') | list }}"
+    needed_repos: "{{ resolved_apps | rejectattr('pkg', 'eq', 'skip') | rejectattr('pkg', 'mapping') | map(attribute='repo') | select | unique | list }}"
+    installed_apps: "{{ resolved_apps | rejectattr('pkg', 'eq', 'skip') | map(attribute='name') | list }}"

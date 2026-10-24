@@ -1,0 +1,41 @@
+---
+# Inbound SSH (ADR 0006). Keys are written before password auth is disabled, and the
+# run stops if GitHub returns no keys, so the machine can't be locked out.
+- name: Fetch public keys from GitHub
+  ansible.builtin.uri:
+    url: "https://github.com/{{ github_user }}.keys"
+    return_content: true
+  register: github_keys
+  changed_when: false
+
+- name: Refuse to continue without keys
+  ansible.builtin.assert:
+    that: github_keys.content | trim | length > 0
+    fail_msg: "https://github.com/{{ github_user }}.keys returned no keys; not hardening sshd."
+
+- name: Enable and start sshd
+  ansible.builtin.service:
+    name: "{{ ssh_service }}"
+    enabled: true
+    state: started
+
+- name: Authorize GitHub keys
+  ansible.posix.authorized_key:
+    user: "{{ target_user }}"
+    key: "{{ github_keys.content }}"
+    exclusive: true
+
+- name: Harden sshd
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    mode: "0644"
+    content: |
+      # Managed by Ansible (phase1.yml)
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+  notify: Restart sshd
+
+- name: Check sshd configuration
+  ansible.builtin.command: sshd -t
+  changed_when: false
