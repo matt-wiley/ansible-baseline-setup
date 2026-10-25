@@ -1,0 +1,171 @@
+---
+# Read-only check that Phase 1 left the machine as intended. Changes nothing.
+#   ansible-playbook -i localhost, -c local verify.yml -K
+# Fails if any check fails. Steps behind the manual gate are reported separately and never fail the run.
+- name: Verify Phase 1
+  hosts: all
+  gather_facts: true
+  vars_files:
+    - vars/main.yml
+    - vars/apps.yml
+  vars:
+    target_user: "{{ ansible_user_id }}"
+    target_home: "{{ ansible_env.HOME }}"
+    has_librewolf: "{{ 'librewolf' in installed_apps }}"
+    has_1password: "{{ '1password' in installed_apps }}"
+    has_sshd: "{{ 'openssh-server' in installed_apps }}"
+
+  tasks:
+    - name: Resolve the app matrix
+      ansible.builtin.include_tasks: tasks/resolve_apps.yml
+
+    - name: Gather installed packages
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Look up the login shell
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ target_user }}"
+
+    - name: Check for mise
+      ansible.builtin.stat:
+        path: "{{ target_home }}/.local/bin/mise"
+      register: mise_bin
+
+    - name: Read ~/.profile
+      ansible.builtin.slurp:
+        src: "{{ target_home }}/.profile"
+      register: profile
+      failed_when: false
+
+    - name: List missing mise tools
+      ansible.builtin.command:
+        cmd: "{{ target_home }}/.local/bin/mise ls --missing --no-header"
+      register: mise_missing
+      changed_when: false
+      failed_when: false
+      when: mise_tools | length > 0 and mise_bin.stat.exists
+
+    - name: Resolve which sudo is in use
+      ansible.builtin.command: readlink -f /usr/bin/sudo
+      register: sudo_path
+      changed_when: false
+      failed_when: false
+
+    - name: Read the effective sshd configuration
+      ansible.builtin.command: sshd -T
+      become: true
+      register: sshd_effective
+      changed_when: false
+      ignore_errors: true
+      when: has_sshd
+
+    - name: Check the sshd service
+      ansible.builtin.command: "systemctl is-active {{ ssh_service }}"
+      register: sshd_active
+      changed_when: false
+      failed_when: false
+      when: has_sshd
+
+    - name: Fetch public keys from GitHub
+      ansible.builtin.uri:
+        url: "https://github.com/{{ github_user }}.keys"
+        return_content: true
+      register: github_keys
+      failed_when: false
+      when: has_sshd
+
+    - name: Read authorized_keys
+      ansible.builtin.slurp:
+        src: "{{ target_home }}/.ssh/authorized_keys"
+      register: authorized_keys
+      failed_when: false
+      when: has_sshd
+
+    - name: Read the 1Password allowed browsers
+      ansible.builtin.slurp:
+        src: /etc/1password/custom_allowed_browsers
+      register: allowed_browsers
+      failed_when: false
+      when: has_1password and has_librewolf
+
+    - name: Read the native messaging manifest
+      ansible.builtin.slurp:
+        src: "{{ target_home }}/.librewolf/native-messaging-hosts/com.1password.1password.json"
+      register: nm_manifest
+      failed_when: false
+      when: has_1password and has_librewolf
+
+    - name: Check the manifest's BrowserSupport binary exists
+      ansible.builtin.stat:
+        path: "{{ (nm_manifest.content | b64decode | from_json).path }}"
+      register: nm_binary
+      failed_when: false
+      when: has_1password and has_librewolf and nm_manifest.content is defined
+
+    - name: Read the Librewolf overrides
+      ansible.builtin.slurp:
+        src: "{{ item }}/librewolf.overrides.cfg"
+      loop:
+        - "{{ target_home }}/.librewolf"
+        - "{{ target_home }}/.config/librewolf/librewolf"
+      register: lw_overrides
+      failed_when: false
+      when: has_librewolf
+
+    - name: Check for the 1Password SSH agent socket (manual gate)
+      ansible.builtin.stat:
+        path: "{{ target_home }}/.1password/agent.sock"
+      register: agent_sock
+
+    - name: Evaluate checks
+      ansible.builtin.set_fact:
+        checks:
+          "packages installed": >-
+            {{ (native_pkgs + aur_pkgs) | difference(ansible_facts.packages.keys() | list) | length == 0 }}
+          "zsh is the login shell": "{{ getent_passwd[target_user][5] == '/usr/bin/zsh' }}"
+          "mise installed": "{{ mise_bin.stat.exists }}"
+          "mise shims in ~/.profile": >-
+            {{ profile.content is defined and 'ANSIBLE MANAGED: mise' in (profile.content | b64decode) }}
+          "mise tools installed": >-
+            {{ mise_tools | length == 0 or (mise_missing.rc | default(1) == 0 and mise_missing.stdout | trim == '') }}
+          "classic sudo, not sudo-rs": >-
+            {{ ansible_os_family != 'Debian' or 'cargo' not in sudo_path.stdout }}
+          "sshd running": "{{ not has_sshd or sshd_active.stdout == 'active' }}"
+          "sshd password login off": >-
+            {{ not has_sshd or 'passwordauthentication no' in (sshd_effective.stdout | default('')) }}
+          "sshd root login off": >-
+            {{ not has_sshd or 'permitrootlogin no' in (sshd_effective.stdout | default('')) }}
+          "authorized_keys match GitHub": >-
+            {{ not has_sshd or (
+                 github_keys.content | default('') | trim | length > 0 and
+                 authorized_keys.content is defined and
+                 (github_keys.content | trim).splitlines()
+                   | map('regex_replace', '^(\S+ \S+).*$', '\1') | list
+                 == (authorized_keys.content | b64decode | trim).splitlines()
+                   | map('regex_replace', '^(\S+ \S+).*$', '\1') | list) }}
+          "1Password allows Librewolf": >-
+            {{ not (has_1password and has_librewolf) or
+               (allowed_browsers.content is defined and 'librewolf' in (allowed_browsers.content | b64decode)) }}
+          "1Password manifest points at a real binary": >-
+            {{ not (has_1password and has_librewolf) or (nm_binary.stat.exists | default(false)) }}
+          "Librewolf Firefox Accounts enabled": >-
+            {{ not has_librewolf or (lw_overrides.results | selectattr('content', 'defined')
+               | map(attribute='content') | map('b64decode')
+               | select('search', 'identity.fxaccounts.enabled", true') | list | length == 2) }}
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: |
+          {% for name, ok in checks.items() %}
+          {{ 'PASS' if ok | bool else 'FAIL' }}  {{ name }}
+          {% endfor %}
+
+          Manual gate: 1Password SSH agent socket {{ 'present' if agent_sock.stat.exists else 'not found yet (enable the SSH agent in 1Password)' }}
+
+    - name: Fail if any check failed
+      ansible.builtin.assert:
+        that: checks.values() | map('bool') | min
+        fail_msg: "One or more checks failed; see the report above."
+        quiet: true
