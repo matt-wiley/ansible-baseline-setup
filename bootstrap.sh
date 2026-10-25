@@ -90,6 +90,23 @@ run_phase1() {
     ansible-playbook -i localhost, -c local phase1.yml -K </dev/tty
 }
 
+print_next_steps() {
+    log "Phase 1 complete. Manual steps (the manual gate):"
+    cat <<STEPS
+
+  1. Open 1Password and sign in.
+     Settings > Developer > turn on "Use the SSH agent".
+     Settings > Browser > turn on the browser integration, if it is off.
+  2. Open Librewolf and sign in to your Firefox account.
+     Firefox Accounts is already enabled, so no restart is needed.
+     The 1Password extension should then find the app and log in on its own.
+  3. Check the result:
+       ansible-playbook -i localhost, -c local $SETUP_DIR/verify.yml -K
+
+Then run Phase 2 (not built yet).
+STEPS
+}
+
 # Wrapped in a function so a truncated `curl | bash` download runs nothing.
 main() {
     [ "$(id -u)" -ne 0 ] || die "run as your normal user, not root; Phase 1 escalates with sudo"
@@ -101,7 +118,7 @@ main() {
     ensure_classic_sudo "$family"
     sync_repo
     run_phase1
-    log "Phase 1 complete. Next: the manual gate (1Password, Firefox Sync), then Phase 2."
+    print_next_steps
 }
 
 main "$@"
