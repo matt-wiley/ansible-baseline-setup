@@ -105,7 +105,8 @@ print_next_steps() {
   4. Check the result:
        ansible-playbook -i localhost, -c local $SETUP_DIR/verify.yml -K
 
-Then run Phase 2 (not built yet).
+Then run Phase 2 (clones your zsh-config repo; needs the gh login above):
+       ansible-playbook -i localhost, -c local $SETUP_DIR/phase2.yml
 STEPS
 }
 

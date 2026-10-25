@@ -14,7 +14,7 @@ Run it as your normal user, not root, from an interactive terminal. It asks for 
 
 - Bootstrap and Phase 1 are built and have run end to end on Ubuntu 26.04.
 - Debian, Fedora and Arch code paths exist but are untested.
-- Phase 2 (anything needing sign-in, plus the dotfiles tool) is not built yet.
+- Phase 2 (anything needing sign-in) is built but only partly: it creates `~/projects` and clones `zsh-config`. Run its `init.sh` by hand afterward.
 
 ## Layout
 
@@ -22,6 +22,7 @@ Run it as your normal user, not root, from an interactive terminal. It asks for 
 |---|---|
 | `bootstrap.sh` | Installs git and Ansible, clones this repo, runs Phase 1 |
 | `phase1.yml` | The playbook for everything that needs no credentials |
+| `phase2.yml` | The playbook for what needs sign-in, run after the manual gate |
 | `verify.yml` | Read-only check that Phase 1 left the machine as intended |
 | `vars/apps.yml` | The app matrix, Flatpak list and mise tools |
 | `repos/`, `tasks/`, `templates/` | Per-OS-family vendor repos, task files and templates |

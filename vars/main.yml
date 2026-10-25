@@ -13,3 +13,6 @@ ssh_service: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
 # against a manifest from a working install before relying on it.
 onepassword_firefox_extension_ids:
   - "{0a75d802-9aed-41e7-8daa-24c067386e82}"
+
+# Dotfiles repo cloned by Phase 2. Private, so it needs `gh auth login` first.
+zsh_config_repo: "https://github.com/{{ github_user }}/zsh-config"

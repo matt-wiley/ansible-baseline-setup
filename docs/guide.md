@@ -53,7 +53,26 @@ Phase 1 cannot do these. The Bootstrap prints them when it finishes:
 
 3. In a terminal, run `gh auth login` to sign in to GitHub.
 
-Phase 2, which needs the SSH agent and sign-in, is not built yet.
+Then run Phase 2.
+
+## Phase 2
+
+Phase 2 does what needs a sign-in. It runs as your normal user and needs no sudo, so there is no `-K`:
+
+```bash
+ansible-playbook -i localhost, -c local ~/ansible-baseline-setup/phase2.yml
+```
+
+It stops with a clear message if `gh auth login` has not been done. Then it:
+
+1. Creates `~/projects`, the home for git repos.
+2. Clones `https://github.com/matt-wiley/zsh-config` to `~/projects/zsh-config`. The repo is private, so the clone authenticates through `gh` for that one command only and does not touch `~/.gitconfig`. An existing checkout is left alone, so local work is never overwritten.
+
+Then one manual step, which Phase 2 prints when it finishes:
+
+```bash
+cd ~/projects/zsh-config && ./init.sh
+```
 
 ## Verify
 

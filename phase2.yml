@@ -1,0 +1,54 @@
+---
+# Phase 2: everything that needs sign-in (ADR 0004). Run after the manual gate and `gh auth login`.
+#   ansible-playbook -i localhost, -c local phase2.yml
+# Runs as your normal user. Needs no root, so no -K.
+- name: Phase 2
+  hosts: all
+  gather_facts: true
+  vars_files:
+    - vars/main.yml
+  vars:
+    target_user: "{{ ansible_user_id }}"
+    target_home: "{{ ansible_env.HOME }}"
+    projects_dir: "{{ target_home }}/projects"
+
+  tasks:
+    - name: Check the target is not root
+      ansible.builtin.assert:
+        that: target_user != 'root'
+        fail_msg: "Run as your normal user."
+
+    - name: Check that GitHub CLI is signed in
+      ansible.builtin.command: gh auth status
+      register: gh_status
+      changed_when: false
+      failed_when: false
+
+    - name: Require a GitHub CLI login
+      ansible.builtin.assert:
+        that: gh_status.rc == 0
+        fail_msg: "Not signed in to GitHub. Run `gh auth login`, then rerun Phase 2."
+
+    - name: Create the projects directory
+      ansible.builtin.file:
+        path: "{{ projects_dir }}"
+        state: directory
+        mode: "0755"
+
+    # The repo is private. Use gh as the credential helper for this clone only, so ~/.gitconfig is untouched.
+    # update: false never touches an existing checkout, so local work is safe.
+    - name: Clone zsh-config
+      ansible.builtin.git:
+        repo: "{{ zsh_config_repo }}"
+        dest: "{{ projects_dir }}/zsh-config"
+        update: false
+      environment:
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: credential.https://github.com.helper
+        GIT_CONFIG_VALUE_0: "!gh auth git-credential"
+
+    - name: Next manual steps
+      ansible.builtin.debug:
+        msg: |
+          Phase 2 complete. Manual steps:
+            1. cd {{ projects_dir }}/zsh-config && ./init.sh
