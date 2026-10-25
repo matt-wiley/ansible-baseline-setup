@@ -114,6 +114,13 @@
       failed_when: false
       when: has_librewolf
 
+    - name: Read the default browser
+      ansible.builtin.command: xdg-settings get default-web-browser
+      register: default_browser
+      changed_when: false
+      failed_when: false
+      when: has_librewolf
+
     - name: Check for the 1Password SSH agent socket (manual gate)
       ansible.builtin.stat:
         path: "{{ target_home }}/.1password/agent.sock"
@@ -150,6 +157,8 @@
                (allowed_browsers.content is defined and 'librewolf' in (allowed_browsers.content | b64decode)) }}
           "1Password manifest points at a real binary": >-
             {{ not (has_1password and has_librewolf) or (nm_binary.stat.exists | default(false)) }}
+          "Librewolf is the default browser": >-
+            {{ not has_librewolf or 'librewolf' in (default_browser.stdout | default('') | lower) }}
           "Librewolf Firefox Accounts enabled": >-
             {{ not has_librewolf or (lw_overrides.results | selectattr('content', 'defined')
                | map(attribute='content') | map('b64decode')

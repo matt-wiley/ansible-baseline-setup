@@ -10,7 +10,7 @@ After the Bootstrap and Phase 1, the machine has:
 - zsh as your login shell
 - mise, with shims on `PATH` for GUI-launched apps
 - sshd, hardened (no password or root login), accepting the public keys from `https://github.com/<github_user>.keys`
-- Librewolf with Firefox Accounts enabled, and 1Password allowed to talk to it
+- Librewolf as the default browser (the launcher is read from the installed package), with Firefox Accounts enabled, and 1Password allowed to talk to it
 
 See the [decision records](adr/) for why each choice was made.
 

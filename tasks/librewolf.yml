@@ -20,3 +20,56 @@
   loop:
     - "{{ target_home }}/.librewolf"
     - "{{ target_home }}/.config/librewolf/librewolf"
+
+# Make Librewolf the default browser. The launcher is determined, not assumed: take the .desktop
+# files the Librewolf package installed and keep the one that handles https links.
+- name: Find the Librewolf package name
+  ansible.builtin.set_fact:
+    librewolf_pkg: >-
+      {% set p = (resolved_apps | selectattr('name', 'eq', 'librewolf') | first).pkg -%}
+      {{ p.aur if p is mapping else p }}
+
+- name: List files installed by the Librewolf package
+  ansible.builtin.command:
+    argv: "{{ package_files_cmd[ansible_os_family] }}"
+  vars:
+    package_files_cmd:
+      Debian: [dpkg, -L, "{{ librewolf_pkg }}"]
+      RedHat: [rpm, -ql, "{{ librewolf_pkg }}"]
+      Archlinux: [pacman, -Qlq, "{{ librewolf_pkg }}"]
+  register: librewolf_files
+  changed_when: false
+
+- name: Find the package's launchers that handle https links
+  ansible.builtin.command:
+    argv: >-
+      {{ ['grep', '-l', '--', 'x-scheme-handler/https']
+         + (librewolf_files.stdout_lines | select('match', '^/usr/share/applications/[^/]+\.desktop$') | list) }}
+  register: https_launchers
+  changed_when: false
+  failed_when: https_launchers.rc > 1
+
+- name: Record the launcher
+  ansible.builtin.set_fact:
+    librewolf_launcher: "{{ https_launchers.stdout_lines }}"
+
+- name: Require exactly one browser launcher
+  ansible.builtin.assert:
+    that: librewolf_launcher | length == 1
+    fail_msg: "Expected exactly one https launcher in the Librewolf package, found: {{ librewolf_launcher }}"
+
+- name: Read the current default browser
+  ansible.builtin.command: xdg-settings get default-web-browser
+  register: default_browser
+  changed_when: false
+  failed_when: false
+
+- name: Set Librewolf as the default browser
+  ansible.builtin.command: "xdg-settings set default-web-browser {{ librewolf_launcher[0] | basename }}"
+  when: default_browser.stdout | trim != librewolf_launcher[0] | basename
+
+- name: Confirm the default browser
+  ansible.builtin.command: xdg-settings get default-web-browser
+  register: default_browser_after
+  changed_when: false
+  failed_when: default_browser_after.stdout | trim != librewolf_launcher[0] | basename
