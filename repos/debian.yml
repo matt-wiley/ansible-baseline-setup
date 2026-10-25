@@ -18,6 +18,32 @@
   register: repo_1password
   when: "'1password' in needed_repos"
 
+- name: Ensure /etc/apt/keyrings exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: "'github-cli' in needed_repos"
+
+- name: Install the GitHub CLI signing key
+  ansible.builtin.get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    mode: "0644"
+  when: "'github-cli' in needed_repos"
+
+- name: Add GitHub CLI apt repository
+  ansible.builtin.deb822_repository:
+    name: github-cli
+    types: [deb]
+    uris: https://cli.github.com/packages
+    suites: [stable]
+    components: [main]
+    architectures: ["{{ deb_arch }}"]
+    signed_by: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+  register: repo_github_cli
+  when: "'github-cli' in needed_repos"
+
 - name: Install extrepo (Librewolf's recommended repo method)
   ansible.builtin.apt:
     name: extrepo
@@ -34,4 +60,4 @@
 - name: Refresh apt cache after repository changes
   ansible.builtin.apt:
     update_cache: true
-  when: repo_1password is changed or repo_librewolf is changed
+  when: repo_1password is changed or repo_github_cli is changed or repo_librewolf is changed

@@ -12,6 +12,7 @@ The starting app list, and how to add more. See ADR 0002 (native first) and ADR 
 | zoxide | Native | Distro repo | `zoxide` | — | Shell init lives in the Dotfiles tool |
 | 1Password | Native | Vendor repo | `1password` | AUR `1password` | Must be native (ADR 0005) |
 | Librewolf | Native | Vendor repo | `librewolf` | AUR `librewolf-bin` | Must be native (ADR 0005) |
+| gh | Native | Vendor repo | `gh` | `github-cli` | Debian and Fedora use GitHub's repo; Arch uses `extra` |
 | openssh-server | Native | Distro repo | `openssh-server` | `openssh` | Hardened by Phase 1 (ADR 0006) |
 
 "—" means the `default` value applies.

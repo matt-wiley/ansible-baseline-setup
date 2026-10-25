@@ -21,3 +21,10 @@
     dest: /etc/yum.repos.d/librewolf.repo
     mode: "0644"
   when: "'librewolf' in needed_repos"
+
+- name: Add GitHub CLI dnf repository
+  ansible.builtin.get_url:
+    url: https://cli.github.com/packages/rpm/gh-cli.repo
+    dest: /etc/yum.repos.d/gh-cli.repo
+    mode: "0644"
+  when: "'github-cli' in needed_repos"

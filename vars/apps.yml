@@ -9,6 +9,7 @@ native_apps:
   zoxide: { default: zoxide }
   openssh-server: { default: openssh-server, Archlinux: openssh }
   1password: { default: 1password, repo: 1password, Archlinux: { aur: 1password } }
+  gh: { default: gh, repo: github-cli, Archlinux: github-cli }
   librewolf: { default: librewolf, repo: librewolf, Archlinux: { aur: librewolf-bin } }
 
 # Flathub IDs. Opt-in only; never IDEs, terminals, dev tools or browsers (ADR 0002).
