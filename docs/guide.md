@@ -2,6 +2,8 @@
 
 How to run, verify and change this repo. Terms such as Bootstrap, Phase 1 and manual gate are defined in [CONTEXT.md](../CONTEXT.md).
 
+Run the playbooks from the repo directory (`cd ~/ansible-baseline-setup`). `ansible.cfg` there makes multi-line messages print as readable text; from anywhere else they print as escaped one-liners.
+
 ## What you get
 
 After the Bootstrap and Phase 1, the machine has:
@@ -60,7 +62,7 @@ Then run Phase 2.
 Phase 2 does what needs a sign-in. It runs as your normal user and needs no sudo, so there is no `-K`:
 
 ```bash
-ansible-playbook -i localhost, -c local ~/ansible-baseline-setup/phase2.yml
+cd ~/ansible-baseline-setup && ansible-playbook -i localhost, -c local phase2.yml
 ```
 
 It stops with a clear message if `gh auth login` has not been done. Then it:
@@ -79,7 +81,7 @@ cd ~/projects/zsh-config && ./init.sh
 `verify.yml` is read-only. It checks packages, login shell, mise, sudo, sshd hardening, `authorized_keys` against GitHub, the 1Password and Librewolf wiring, and the Firefox Accounts setting. It reports the 1Password SSH agent socket separately, since that depends on the manual gate.
 
 ```bash
-ansible-playbook -i localhost, -c local ~/ansible-baseline-setup/verify.yml -K
+cd ~/ansible-baseline-setup && ansible-playbook -i localhost, -c local verify.yml -K
 ```
 
 It exits non-zero if any check fails. `-K` is needed for one check that reads sshd's effective config as root.
