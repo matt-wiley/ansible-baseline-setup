@@ -51,4 +51,5 @@
       ansible.builtin.debug:
         msg: |
           Phase 2 complete. Manual steps:
+
             1. cd {{ projects_dir }}/zsh-config && ./init.sh

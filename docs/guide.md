@@ -46,7 +46,7 @@ Set these in the environment before running the script:
 
 ## The manual gate
 
-Phase 1 cannot do these. The Bootstrap prints them when it finishes:
+Phase 1 cannot do these. It prints them when it finishes (Phase 2 does the same for its own manual step):
 
 1. Open 1Password and sign in. Turn on the SSH agent under Settings > Developer. Turn on the browser integration under Settings > Browser if it is off.
 2. Open Librewolf and sign in to your Firefox account. Firefox Accounts is already enabled, so no restart is needed. The 1Password extension should then find the app and log in on its own.

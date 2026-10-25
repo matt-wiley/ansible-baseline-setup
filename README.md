@@ -6,7 +6,7 @@ Automated first-run setup for a frequently re-installed Linux workstation. One c
 curl -fsSL https://raw.githubusercontent.com/matt-wiley/ansible-baseline-setup/main/bootstrap.sh | bash
 ```
 
-Run it as your normal user, not root, from an interactive terminal. It asks for your sudo password once.
+Run it as your normal user, not root, from an interactive terminal. It asks for your sudo password once, and Phase 1 prints your manual next steps when it finishes.
 
 **Read the [usage guide](docs/guide.md)** for what it does, the manual steps afterward, how to verify the result, and how to develop and test changes.
 
@@ -21,6 +21,7 @@ Run it as your normal user, not root, from an interactive terminal. It asks for 
 | Path | Purpose |
 |---|---|
 | `bootstrap.sh` | Installs git and Ansible, clones this repo, runs Phase 1 |
+| `ansible.cfg` | Prints multi-line playbook messages readably; applies when run from the repo directory |
 | `phase1.yml` | The playbook for everything that needs no credentials |
 | `phase2.yml` | The playbook for what needs sign-in, run after the manual gate |
 | `verify.yml` | Read-only check that Phase 1 left the machine as intended |

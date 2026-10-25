@@ -68,6 +68,25 @@
       ansible.builtin.include_tasks: tasks/onepassword_librewolf.yml
       when: "'1password' in installed_apps and 'librewolf' in installed_apps"
 
+  post_tasks:
+    - name: Next manual steps
+      ansible.builtin.debug:
+        msg: |
+          Phase 1 complete. Manual steps (the manual gate):
+
+            1. Open 1Password and sign in.
+               Settings > Developer > turn on "Use the SSH agent".
+               Settings > Browser > turn on the browser integration, if it is off.
+            2. Open Librewolf and sign in to your Firefox account.
+               Firefox Accounts is already enabled, so no restart is needed.
+               The 1Password extension should then find the app and log in on its own.
+            3. Sign in to GitHub from a terminal:
+                 gh auth login
+
+          Then, from {{ playbook_dir }}:
+            Check the result:  ansible-playbook -i localhost, -c local verify.yml -K
+            Run Phase 2:       ansible-playbook -i localhost, -c local phase2.yml
+
   handlers:
     - name: Restart sshd
       ansible.builtin.service:
