@@ -51,6 +51,8 @@ Phase 1 cannot do these. The Bootstrap prints them when it finishes:
 1. Open 1Password and sign in. Turn on the SSH agent under Settings > Developer. Turn on the browser integration under Settings > Browser if it is off.
 2. Open Librewolf and sign in to your Firefox account. Firefox Accounts is already enabled, so no restart is needed. The 1Password extension should then find the app and log in on its own.
 
+3. In a terminal, run `gh auth login` to sign in to GitHub.
+
 Phase 2, which needs the SSH agent and sign-in, is not built yet.
 
 ## Verify

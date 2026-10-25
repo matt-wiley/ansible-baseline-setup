@@ -100,7 +100,9 @@ print_next_steps() {
   2. Open Librewolf and sign in to your Firefox account.
      Firefox Accounts is already enabled, so no restart is needed.
      The 1Password extension should then find the app and log in on its own.
-  3. Check the result:
+  3. Sign in to GitHub from a terminal:
+       gh auth login
+  4. Check the result:
        ansible-playbook -i localhost, -c local $SETUP_DIR/verify.yml -K
 
 Then run Phase 2 (not built yet).
